@@ -11,14 +11,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@Sql("/werknemers.sql")
+@Sql({ "/werknemers.sql", "/bestellingen.sql" })
 @AutoConfigureMockMvc
 class WerknemerControllerTest extends AbstractTransactionalJUnit4SpringContextTests {
     private final static String WERKNEMERS = "werknemers";
+    private final static String BESTELLINGEN = "bestellingen";
     private final MockMvc mockMvc;
 
     WerknemerControllerTest(MockMvc mockMvc) {
         this.mockMvc = mockMvc;
+    }
+    private long findIdTestWerknemer1() {
+        return jdbcTemplate.queryForObject(
+                "select id from werknemers where voornaam = 'testvoornaam1'", Long.class);
     }
     @Test
     void findAll() throws Exception {
@@ -26,5 +31,14 @@ class WerknemerControllerTest extends AbstractTransactionalJUnit4SpringContextTe
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("length()").value(countRowsInTable(WERKNEMERS)));
+    }
+    @Test
+    void findByWerknemerId() throws Exception {
+        var werknemerId = findIdTestWerknemer1();
+        mockMvc.perform(get("/werknemers/{werknemerId}/bestellingen", werknemerId))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("length()").value(
+                                countRowsInTableWhere(BESTELLINGEN, "werknemerId = " + werknemerId)));
     }
 }
