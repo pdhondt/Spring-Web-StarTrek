@@ -2,12 +2,11 @@ package be.vdab.startrek.controllers;
 
 import be.vdab.startrek.domain.Bestelling;
 import be.vdab.startrek.domain.Werknemer;
+import be.vdab.startrek.dto.NieuweBestelling;
 import be.vdab.startrek.services.BestellingService;
 import be.vdab.startrek.services.WerknemerService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -29,5 +28,10 @@ class WerknemerController {
     List<Bestelling> findByWerknemerId(@PathVariable long werknemerId) {
         return bestellingService.findByWerknemerId(werknemerId);
     }
-
+    @PostMapping("{werknemerId}/nieuwebestelling")
+    long create(@PathVariable long werknemerId,
+                @RequestBody @Valid NieuweBestelling bestelling) {
+        return bestellingService.create(new Bestelling(werknemerId, bestelling.omschrijving(),
+                bestelling.bedrag()));
+    }
 }

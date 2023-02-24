@@ -3,8 +3,10 @@ package be.vdab.startrek.repositories;
 import be.vdab.startrek.domain.Bestelling;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,4 +30,21 @@ public class BestellingRepository {
                 """;
         return template.query(sql, bestellingMapper, werknemerId);
     }
+    public long create(Bestelling bestelling) {
+        var sql = """
+                insert into bestellingen(werknemerId, omschrijving, bedrag, moment)
+                values (?, ?, ?, ?)
+                """;
+        var keyHolder = new GeneratedKeyHolder();
+        template.update(connection -> {
+            var statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            statement.setLong(1, bestelling.getWerknemerId());
+            statement.setString(2, bestelling.getOmschrijving());
+            statement.setBigDecimal(3, bestelling.getBedrag());
+            statement.setObject(4, bestelling.getMoment());
+            return statement;
+        }, keyHolder);
+        return keyHolder.getKey().longValue();
+    }
+
 }
