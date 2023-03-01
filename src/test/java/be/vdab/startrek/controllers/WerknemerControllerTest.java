@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -60,5 +61,36 @@ class WerknemerControllerTest extends AbstractTransactionalJUnit4SpringContextTe
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonData))
                 .andExpect(status().isBadRequest());
+    }
+    @Test
+    void create() throws Exception {
+        var werknemerId = findIdTestWerknemer1();
+        var jsonData = Files.readString(TEST_RESOURCES.resolve("correcteBestelling.json"));
+        var responseBody = mockMvc.perform(post("/werknemers/{werknemerId}/nieuwebestelling", werknemerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonData))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(countRowsInTableWhere(BESTELLINGEN,
+                "omschrijving = 'testbestelling3' and bedrag = 3 and id = " + responseBody)).isOne();
+        assertThat(countRowsInTableWhere(WERKNEMERS,
+                "budget = 7 and id = " + werknemerId)).isOne();
+    }
+    @Test
+    void createVoorOnbestaandeWerknemerMislukt() throws Exception {
+        var jsonData = Files.readString(TEST_RESOURCES.resolve("correcteBestelling.json"));
+        mockMvc.perform(post("/werknemers/{werknemerId}/nieuwebestelling", Long.MAX_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonData))
+                .andExpect(status().isNotFound());
+    }
+    @Test
+    void bestelMetTeGrootBedragMislukt() throws Exception {
+        var jsonData = Files.readString(TEST_RESOURCES.resolve("bestellingMetTeGrootBedrag.json"));
+        var werknemerId = findIdTestWerknemer1();
+        mockMvc.perform(post("/werknemers/{werknemerId}/nieuwebestelling", werknemerId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonData))
+                .andExpect(status().isConflict());
     }
 }
