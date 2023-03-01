@@ -9,13 +9,13 @@ setText("naarWerknemer", naam);
 
 byId("bestel").onclick = async function () {
     verbergFouten();
-    var omschrijvingInput = byId("omschrijving");
+    const omschrijvingInput = byId("omschrijving");
     if (! omschrijvingInput.checkValidity()) {
         toon("omschrijvingFout");
         omschrijvingInput.focus();
         return;
     }
-    var bedragInput = byId("bedrag");
+    const bedragInput = byId("bedrag");
     if (! bedragInput.checkValidity()) {
         toon("bedragFout");
         bedragInput.focus();
@@ -23,8 +23,8 @@ byId("bestel").onclick = async function () {
     }
     const bestelling =
         {
-            "omschrijving": omschrijvingInput.value,
-            "bedrag": bedragInput.value
+            omschrijving: omschrijvingInput.value,
+            bedrag: bedragInput.value
         }
     await bestel(werknemer.id, bestelling)
 }
@@ -32,11 +32,15 @@ byId("bestel").onclick = async function () {
 function verbergFouten() {
     verberg("omschrijvingFout");
     verberg("bedragFout");
-    verberg("onvoldoendeBudget");
+    verberg("conflict");
     verberg("storing");
+    verberg("nietGevonden");
 }
 
 async function bestel(werknemerId, bestelling) {
+    verberg("nietGevonden");
+    verberg("conflict");
+    verberg("storing");
     const response = await fetch(`werknemers/${werknemerId}/nieuwebestelling`,
         {
             method: "POST",
@@ -46,10 +50,17 @@ async function bestel(werknemerId, bestelling) {
     if (response.ok) {
         window.location = "vorigebestellingen.html";
     } else {
-        if (response.status === 409) {
-            toon("onvoldoendeBudget");
-        } else {
-            toon("storing");
+        switch (response.status) {
+            case 404:
+                toon("nietGevonden");
+                break;
+            case 409:
+                const responseBody = await response.json();
+                setText("conflict", responseBody.message);
+                toon("conflict");
+                break;
+            default:
+                toon("storing");
         }
     }
 }
